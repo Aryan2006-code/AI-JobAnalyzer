@@ -1,5 +1,17 @@
-from pydantic import BaseModel
-from typing import List, Optional
+from pydantic import BaseModel, Field, BeforeValidator
+from typing import List, Optional, Annotated
+from datetime import datetime
+
+# Helper for MongoDB ObjectId
+PyObjectId = Annotated[str, BeforeValidator(str)]
+
+class DBModel(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    class Config:
+        populate_by_name = True
+        arbitrary_types_allowed = True
 
 class JobDescriptionRequest(BaseModel):
     job_description: str
@@ -22,7 +34,7 @@ class InterviewPrepRequest(BaseModel):
     responsibilities: List[str]
 
 # Response Models
-class JobAnalysisResponse(BaseModel):
+class JobAnalysisResponse(DBModel):
     job_title: str
     company: str
     summary: str
@@ -34,7 +46,7 @@ class JobAnalysisResponse(BaseModel):
     preferred_qualifications: List[str]
     ats_keywords: List[str]
 
-class SkillGapResponse(BaseModel):
+class SkillGapResponse(DBModel):
     user_skills: List[str]
     skills_required: List[str]
     skills_matched: List[str]
@@ -47,17 +59,17 @@ class RoadmapItem(BaseModel):
     tasks: List[str]
     resources: List[str]
 
-class RoadmapResponse(BaseModel):
+class RoadmapResponse(DBModel):
     seven_day_plan: List[RoadmapItem]
     thirty_day_plan: List[RoadmapItem]
 
-class ResumeOptimizerResponse(BaseModel):
+class ResumeOptimizerResponse(DBModel):
     keywords_to_add: List[str]
     resume_summary_section: str
     role_specific_bullet_points: List[str]
     common_mistakes: List[str]
 
-class InterviewPrepResponse(BaseModel):
+class InterviewPrepResponse(DBModel):
     technical_questions: List[str]
     behavioral_questions: List[str]
     scenario_questions: List[str]

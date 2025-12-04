@@ -5,13 +5,13 @@ from dotenv import load_dotenv
 
 from pathlib import Path
 
-print(f"DEBUG: CWD is {os.getcwd()}")
+
 env_path = Path(__file__).parent / '.env'
-print(f"DEBUG: Loading .env from {env_path}")
+
 load_dotenv(dotenv_path=env_path, override=True)
 
 api_key = os.getenv("GEMINI_API_KEY")
-print(f"DEBUG: Loaded API Key: {api_key[:5]}...{api_key[-5:] if api_key else 'None'}")
+
 
 if not api_key:
     print("Warning: GEMINI_API_KEY not found in environment variables.")

@@ -23,6 +23,8 @@
 -   **Python**: Core Language
 -   **FastAPI**: Web Framework
 -   **Google Gemini API**: AI/LLM Integration
+-   **MongoDB**: NoSQL Database (Atlas)
+-   **Motor**: Async MongoDB Driver
 
 ## ⚙️ Setup Instructions
 
@@ -42,6 +44,7 @@
 3.  Set up environment variables:
     -   Create a `.env` file in the `backend` directory.
     -   Add your Google Gemini API key: `GEMINI_API_KEY=your_api_key_here`
+    -   Add your MongoDB connection string: `MONGODB_URL=mongodb://localhost:27017`
 4.  Start the server:
     ```bash
     uvicorn main:app --reload
@@ -58,7 +61,7 @@
     npm install
     ```
 3.  Start the development server:
-    ```bash
+    ```bash     
     npm run dev
     ```
     The application will run at `http://localhost:5173`.

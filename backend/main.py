@@ -1,4 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
+from contextlib import asynccontextmanager
+from typing import List
+from database import db
 from fastapi.middleware.cors import CORSMiddleware
 from models import (
     JobDescriptionRequest, JobAnalysisResponse,
@@ -9,7 +12,13 @@ from models import (
 )
 import ai_service
 
-app = FastAPI(title="AI Job Analyzer API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db.connect()
+    yield
+    db.close()
+
+app = FastAPI(title="AI Job Analyzer API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,11 +34,35 @@ def read_root():
 
 @app.post("/parse-job", response_model=JobAnalysisResponse)
 async def parse_job(request: JobDescriptionRequest):
+
     prompt = ai_service.get_parse_job_prompt(request.job_description)
+
     result = await ai_service.generate_content(prompt)
+
     if "error" in result:
+
         raise HTTPException(status_code=500, detail=result["error"])
+    
+    # Save to DB
+    # Save to DB
+    try:
+        analysis_data = JobAnalysisResponse(**result)
+        db_instance = db.get_db()
+        if db_instance is None:
+
+            raise Exception("Database not connected")
+        await db_instance.job_analyses.insert_one(analysis_data.model_dump(by_alias=True, exclude=["id"]))
+
+    except Exception as e:
+
+        raise HTTPException(status_code=500, detail=f"Database Error: {e}")
+    
     return result
+
+@app.get("/history/jobs", response_model=List[JobAnalysisResponse])
+async def get_job_history():
+    cursor = db.get_db().job_analyses.find().sort("created_at", -1).limit(10)
+    return await cursor.to_list(length=10)
 
 @app.post("/skill-gap", response_model=SkillGapResponse)
 async def skill_gap(request: SkillGapRequest):
@@ -37,7 +70,17 @@ async def skill_gap(request: SkillGapRequest):
     result = await ai_service.generate_content(prompt)
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
+    
+    # Save to DB
+    skill_gap_data = SkillGapResponse(**result)
+    await db.get_db().skill_gaps.insert_one(skill_gap_data.model_dump(by_alias=True, exclude=["id"]))
+    
     return result
+
+@app.get("/history/skill-gaps", response_model=List[SkillGapResponse])
+async def get_skill_gap_history():
+    cursor = db.get_db().skill_gaps.find().sort("created_at", -1).limit(10)
+    return await cursor.to_list(length=10)
 
 @app.post("/roadmap", response_model=RoadmapResponse)
 async def roadmap(request: RoadmapRequest):
@@ -57,7 +100,17 @@ async def roadmap(request: RoadmapRequest):
         
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
+    
+    # Save to DB
+    roadmap_data = RoadmapResponse(**result)
+    await db.get_db().roadmaps.insert_one(roadmap_data.model_dump(by_alias=True, exclude=["id"]))
+    
     return result
+
+@app.get("/history/roadmaps", response_model=List[RoadmapResponse])
+async def get_roadmap_history():
+    cursor = db.get_db().roadmaps.find().sort("created_at", -1).limit(10)
+    return await cursor.to_list(length=10)
 
 @app.post("/resume-optimizer", response_model=ResumeOptimizerResponse)
 async def resume_optimizer(request: ResumeOptimizerRequest):
@@ -65,7 +118,17 @@ async def resume_optimizer(request: ResumeOptimizerRequest):
     result = await ai_service.generate_content(prompt)
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
+    
+    # Save to DB
+    resume_data = ResumeOptimizerResponse(**result)
+    await db.get_db().resumes.insert_one(resume_data.model_dump(by_alias=True, exclude=["id"]))
+    
     return result
+
+@app.get("/history/resumes", response_model=List[ResumeOptimizerResponse])
+async def get_resume_history():
+    cursor = db.get_db().resumes.find().sort("created_at", -1).limit(10)
+    return await cursor.to_list(length=10)
 
 @app.post("/interview-prep", response_model=InterviewPrepResponse)
 async def interview_prep(request: InterviewPrepRequest):
@@ -73,4 +136,14 @@ async def interview_prep(request: InterviewPrepRequest):
     result = await ai_service.generate_content(prompt)
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
+    
+    # Save to DB
+    interview_data = InterviewPrepResponse(**result)
+    await db.get_db().interviews.insert_one(interview_data.model_dump(by_alias=True, exclude=["id"]))
+    
     return result
+
+@app.get("/history/interviews", response_model=List[InterviewPrepResponse])
+async def get_interview_history():
+    cursor = db.get_db().interviews.find().sort("created_at", -1).limit(10)
+    return await cursor.to_list(length=10)
